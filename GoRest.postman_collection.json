@@ -1,0 +1,347 @@
+{
+  "info": {
+    "_postman_id": "b86fdc5b-2cef-47cc-9777-72dc4cfc1ef7",
+    "name": "MSSV_HoTen_GoRest",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Positive_Cases",
+      "item": [
+        {
+          "name": "1. POST User (DDT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{u_name}}\",\n  \"gender\": \"{{u_gender}}\",\n  \"email\": \"{{u_email}}\",\n  \"status\": \"{{u_status}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Doc du lieu tu users.csv (DDT). Neu chay tay khong co file CSV thi dung gia tri mac dinh.",
+                  "const d = pm.iterationData;",
+                  "const baseEmail = d.get('email') || 'testuser@example.com';",
+                  "pm.collectionVariables.set('u_name', d.get('name') || 'Test User');",
+                  "pm.collectionVariables.set('u_gender', d.get('gender') || 'male');",
+                  "pm.collectionVariables.set('u_status', d.get('status') || 'active');",
+                  "// GoRest la API dung chung, email phai duy nhat -> them timestamp de tranh trung voi nguoi khac",
+                  "pm.collectionVariables.set('u_email', Date.now() + '_' + baseEmail);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201 Created', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('Response has id', () => pm.expect(json.id).to.be.a('number'));",
+                  "pm.test('Name khop du lieu CSV', () => pm.expect(json.name).to.eql(pm.collectionVariables.get('u_name')));",
+                  "// API Chaining: luu id dong de dung cho GET/PATCH/DELETE",
+                  "pm.collectionVariables.set('userId', json.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. GET User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/{{userId}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Id dung voi user vua tao', () => pm.expect(json.id).to.eql(Number(pm.collectionVariables.get('userId'))));",
+                  "pm.test('Email dung', () => pm.expect(json.email).to.eql(pm.collectionVariables.get('u_email')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. PATCH User (inactive)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/{{userId}}"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"inactive\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status da doi thanh inactive', () => pm.expect(pm.response.json().status).to.eql('inactive'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4. DELETE User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/{{userId}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Negative_Cases",
+      "item": [
+        {
+          "name": "7. GET User sau khi DELETE (404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/{{userId}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 404 (user da bi xoa)', () => pm.response.to.have.status(404));",
+                  "pm.test('Message bao khong tim thay', () => pm.expect(pm.response.json().message).to.include('not found'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5. POST User khong co Token (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"No Token User\",\n  \"gender\": \"male\",\n  \"email\": \"{{u_email}}\",\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized', () => pm.response.to.have.status(401));",
+                  "pm.test('Message bao loi xac thuc', () => pm.expect(pm.response.json().message).to.include('Authentication failed'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6. POST User trung Email (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{u_name}}\",\n  \"gender\": \"{{u_gender}}\",\n  \"email\": \"{{u_email}}\",\n  \"status\": \"{{u_status}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// User o luong Happy Path da bi DELETE nen email da duoc giai phong.",
+                  "// Tao lai user voi chinh email do de dam bao email thuc su ton tai truoc khi test trung lap.",
+                  "pm.collectionVariables.unset('dupUserId');",
+                  "pm.sendRequest({",
+                  "  url: pm.environment.get('base_url') + '/users',",
+                  "  method: 'POST',",
+                  "  header: { 'Authorization': 'Bearer ' + pm.environment.get('token'), 'Content-Type': 'application/json' },",
+                  "  body: { mode: 'raw', raw: JSON.stringify({",
+                  "    name: pm.collectionVariables.get('u_name'),",
+                  "    gender: pm.collectionVariables.get('u_gender'),",
+                  "    email: pm.collectionVariables.get('u_email'),",
+                  "    status: pm.collectionVariables.get('u_status') }) }",
+                  "}, (err, res) => {",
+                  "  if (!err && res.code === 201) { pm.collectionVariables.set('dupUserId', res.json().id); }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 422 Unprocessable Entity', () => pm.response.to.have.status(422));",
+                  "const errs = pm.response.json();",
+                  "pm.test('Loi nam o truong email: da duoc su dung', () => {",
+                  "  const e = errs.find(x => x.field === 'email');",
+                  "  pm.expect(e, 'khong thay loi truong email').to.exist;",
+                  "  pm.expect(e.message).to.include('already been taken');",
+                  "});",
+                  "// Don dep user tam de khong de rac tren server",
+                  "const dupId = pm.collectionVariables.get('dupUserId');",
+                  "if (dupId) {",
+                  "  pm.sendRequest({ url: pm.environment.get('base_url') + '/users/' + dupId, method: 'DELETE',",
+                  "    header: { 'Authorization': 'Bearer ' + pm.environment.get('token') } }, () => {});",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "u_name",
+      "value": ""
+    },
+    {
+      "key": "u_gender",
+      "value": ""
+    },
+    {
+      "key": "u_email",
+      "value": ""
+    },
+    {
+      "key": "u_status",
+      "value": ""
+    },
+    {
+      "key": "dupUserId",
+      "value": ""
+    }
+  ]
+}

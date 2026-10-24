@@ -1,0 +1,22 @@
+name: API Monitor (Shift-Right)
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Newman
+        run: npm install -g newman
+      - name: Check GET /users availability and response time < 800ms
+        run: |
+          newman run GoRest_Monitor.postman_collection.json \
+            -e GoRest.postman_environment.json \
+            --env-var "token=${{ secrets.GOREST_TOKEN }}"
